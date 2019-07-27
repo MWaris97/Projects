@@ -11,7 +11,7 @@ class VerficationHelper:
         guess = (str([tx.to_ordered_dict() for tx in transactions]) + str(last_hash) + str(proof)).encode() 
         guess_hash = hash_string_256(guess)
         # print(guess_hash)
-        return guess_hash[0:3] == '000'
+        return guess_hash[0:4] == '0000'
 
     @classmethod
     def verify_chain(cls, blockchain):

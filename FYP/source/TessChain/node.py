@@ -177,17 +177,18 @@ def add_transaction():
     success = blockchain.add_trax(recipient, wallet.public_key, signature, amount)
     
     if success:
-        response = {
-            'message' : 'Successfully added trasaction',
-            'transaction':{
-                'tx_sender': wallet.public_key,
-                'tx_recipient': recipient,
-                'tx_amount': amount,
-                'signature': signature
-            },
-            'funds': blockchain.get_balance()
-        }
-        return jsonify(response), 201
+        # response = {
+        #     'message' : 'Successfully added trasaction',
+        #     'transaction':{
+        #         'tx_sender': wallet.public_key,
+        #         'tx_recipient': recipient,
+        #         'tx_amount': amount,
+        #         'signature': signature
+        #     },
+        #     'funds': blockchain.get_balance()
+        # }
+        # return jsonify(response), 201
+        return mine()
     else:
         response = {
             'message': 'Adding transaction failed'
@@ -195,7 +196,7 @@ def add_transaction():
         return jsonify(response), 500
 
 
-@app.route('/mine', methods = ['POST'])
+# @app.route('/mine', methods = ['POST'])
 def mine():
     if blockchain.resolve_conflicts:
         # response = {
