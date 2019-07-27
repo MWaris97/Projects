@@ -223,7 +223,7 @@ class Blockchain:
 
     def resolve(self):
         winner_chain = self.chain
-        replace = False
+        replaced = False
         for node in self.__peer_nodes:
             url = 'http://{}/chain'.format(node) 
             try:
@@ -238,7 +238,7 @@ class Blockchain:
 
                 if node_chain_length > local_chain_length and VerficationHelper.verify_chain(node_chain):
                     winner_chain = node_chain
-                    replace = True
+                    replaced = True
 
             except requests.exceptions.ConnectionError:
                 continue
@@ -246,11 +246,11 @@ class Blockchain:
         self.resolve_conflicts = False
         self.chain = winner_chain
 
-        if replace:
+        if replaced:
             self.__open_trax = []
 
         self.save_data()
-        return replace
+        return replaced
 
 
     def add_peer_node(self, node):

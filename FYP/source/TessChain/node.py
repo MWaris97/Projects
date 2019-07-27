@@ -198,10 +198,11 @@ def add_transaction():
 @app.route('/mine', methods = ['POST'])
 def mine():
     if blockchain.resolve_conflicts:
-        response = {
-            'message': 'Resolve conflicts first, block not added!'
-        }
-        return jsonify(response), 409
+        # response = {
+        #     'message': 'Resolve conflicts first, block not added!'
+        # }
+        # return jsonify(response), 409
+        blockchain.resolve()
     block = blockchain.mine_block()
     if block != None:
         # redundancy in code, convert to funtion
@@ -221,16 +222,16 @@ def mine():
         return jsonify(response), 500
 
 
-@app.route('/resolve_conflicts', methods = ['POST'])
-def resolve_conflicts():
-    replaced = blockchain.resolve()
+# @app.route('/resolve_conflicts', methods = ['POST'])
+# def resolve_conflicts():
+#     replaced = blockchain.resolve()
     
-    if replaced:
-        response = {'message': 'Chain was replaced'}
-    else:
-        response = {'message': 'Local chain kept'}
+#     if replaced:
+#         response = {'message': 'Chain was replaced'}
+#     else:
+#         response = {'message': 'Local chain kept'}
 
-    return jsonify(response), 200
+#     return jsonify(response), 200
 
 
 @app.route('/transactions', methods = ['GET'])
