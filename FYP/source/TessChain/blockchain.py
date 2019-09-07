@@ -252,6 +252,8 @@ class Blockchain:
 
     def count_votes(self, candidate):
         candidates = [[bt.vote for bt in block.ballot if bt.candidate == candidate] for block in self.__chain]
+        if candidates == []:
+            return False
         # print(candidate)
         total_votes = reduce(lambda bt_sum, bt_amt: bt_sum + sum(bt_amt) if len(bt_amt) > 0 else bt_sum, candidates,0)
         # Return the total balance

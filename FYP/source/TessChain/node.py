@@ -6,6 +6,7 @@ from wallet import Wallet
 
 from argparse import ArgumentParser
 
+
 app = Flask(__name__)
 CORS(app)
 
@@ -86,7 +87,7 @@ def create_keys():
 @app.route('/balance', methods = ['GET'])
 def get_balance():
     global voter_key
-    balance = blockchain.get_balance(voter_key) #needs fixing
+    balance = blockchain.get_balance(voter_key)
     if balance != None:
         response = {
             'message': 'Fetched balance succesfully',
@@ -280,6 +281,21 @@ def get_chain():
         dict_block['ballot'] = [bt.__dict__ for bt in dict_block['ballot']]
 
     return jsonify(dict_chain), 200
+
+@app.route('/count_votes/<candidate>', methods = ['GET'])
+def count_votes(candidate):
+    votes = blockchain.count_votes(candidate)
+    if candidate == '' or candidate == None or not votes:
+        response = {
+            'message': 'No candidate found.'
+        }
+        return jsonify(response), 400
+    
+    response = {
+        'message': 'Vote count for candidate {} successful'.format(candidate),
+        'Total votes': votes
+    }
+    return jsonify(response), 200
 
 
 @app.route('/node', methods = ['POST'])
