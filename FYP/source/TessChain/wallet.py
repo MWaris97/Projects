@@ -21,19 +21,22 @@ class Wallet:
         public_key = private_key.publickey()
         return (self.binToAscii(private_key), self.binToAscii(public_key))
 
-    def create_keys(self):
+    def create_keys(self, validator = True):
         private_key, public_key = self.generate_keys()
         self.private_key = private_key
         self.public_key = public_key
-        try:
-            with open('wallet-{}.txt'.format(self.node_id), mode = 'w') as f:
-                f.write(public_key)
-                f.write('\n')
-                f.write(private_key)
-            return True
-        except (IOError, IndexError):
-            print('Saving wallet failed...')
-            return False
+
+        if validator:
+            try:
+                with open('wallet-{}.txt'.format(self.node_id), mode = 'w') as f:
+                    f.write(public_key)
+                    f.write('\n')
+                    f.write(private_key)
+                return True
+            except (IOError, IndexError):
+                print('Saving wallet failed...')
+                return False
+        return True
 
     def load_keys(self):
         try:
@@ -48,17 +51,17 @@ class Wallet:
             print('Loading wallet failed...')
             return False
 
-    def sign_trax(self, sender, recipient, amount):
-        signer = PKCS1_v1_5.new(RSA.import_key(binascii.unhexlify(self.private_key)))
-        h = SHA256.new((str(sender)+str(recipient)+str(amount)).encode('utf8'))
+    def sign_ballot(self, voter_key, voter_prik, candidate, vote):
+        signer = PKCS1_v1_5.new(RSA.import_key(binascii.unhexlify(voter_prik)))
+        h = SHA256.new((str(voter_key)+str(candidate)+str(vote)).encode('utf8'))
 
         signature = signer.sign(h)
         return binascii.hexlify(signature).decode('ascii')
 
 
     @staticmethod
-    def verify_traxSign(trax):
-        public_key = RSA.import_key(binascii.unhexlify(trax.tx_sender))
+    def verify_ballotSign(ballot):
+        public_key = RSA.import_key(binascii.unhexlify(ballot.voter_key))
         verifier = PKCS1_v1_5.new(public_key)
-        h = SHA256.new((str(trax.tx_sender)+str(trax.tx_recipient)+str(trax.tx_amount)).encode('utf8'))
-        return verifier.verify(h, binascii.unhexlify(trax.signature))
+        h = SHA256.new((str(ballot.voter_key)+str(ballot.candidate)+str(ballot.vote)).encode('utf8'))
+        return verifier.verify(h, binascii.unhexlify(ballot.signature))

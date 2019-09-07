@@ -7,8 +7,8 @@ from wallet import Wallet
 class VerficationHelper:
    
     @staticmethod
-    def valid_proof(transactions, last_hash, proof):
-        guess = (str([tx.to_ordered_dict() for tx in transactions]) + str(last_hash) + str(proof)).encode() 
+    def valid_proof(ballots, last_hash, proof):
+        guess = (str([bt.to_ordered_dict() for bt in ballots]) + str(last_hash) + str(proof)).encode() 
         guess_hash = hash_string_256(guess)
         # print(guess_hash)
         return guess_hash[0:4] == '0000'
@@ -21,19 +21,19 @@ class VerficationHelper:
             if block.previous_hash != hash_block(blockchain[index-1]):
                 return False
 
-            if not cls.valid_proof(block.trax[:-1], block.previous_hash, block.proof):
+            if not cls.valid_proof(block.ballot[:-1], block.previous_hash, block.proof):
                 print('Proof of work is invalid')
                 return False
         return True
 
     @staticmethod
-    def verify_trax(transaction, get_balance, check_funds=True):
+    def verify_ballot(ballot, get_balance, check_funds=True):
         if check_funds == True:
-            sender_balance = get_balance(transaction.tx_sender)
-            return sender_balance >= transaction.tx_amount and Wallet.verify_traxSign(transaction)
+            voter_balance = get_balance(ballot.voter_key)
+            return voter_balance >= ballot.vote and Wallet.verify_ballotSign(ballot)
         else:
-            return Wallet.verify_traxSign(transaction)
+            return Wallet.verify_ballotSign(ballot)
 
     @classmethod
-    def verify_allTrax(cls, open_trax, get_balance):
-        return all([cls.verify_trax(el,get_balance, False) for el in open_trax])
+    def verify_allTrax(cls, open_ballot, get_balance):
+        return all([cls.verify_ballot(el,get_balance, False) for el in open_ballot])
