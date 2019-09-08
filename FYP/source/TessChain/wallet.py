@@ -65,3 +65,13 @@ class Wallet:
         verifier = PKCS1_v1_5.new(public_key)
         h = SHA256.new((str(ballot.voter_key)+str(ballot.candidate)+str(ballot.vote)).encode('utf8'))
         return verifier.verify(h, binascii.unhexlify(ballot.signature))
+
+    def encrypt_voterId(self, voterId, voter_prik):
+        private_key = RSA.import_key(binascii.unhexlify(voter_prik))
+        encrypted_voterId = private_key.encrypt(voterId)
+        return binascii.hexlify(encrypted_voterId).decode('ascii')
+
+    # def decrypt_voterId(self, encrypt_voterId, voter_prik):
+    #     public_key = RSA.import_key(binascii.unhexlify(voter_prik))
+    #     decrypted_voterId = public_key.decrypt(encrypt_voterId)
+    #     return binascii.hexlify(decrypted_voterId).decode('ascii')

@@ -205,7 +205,7 @@ def add_ballot():
     success = blockchain.add_ballot(candidate, voter_key, signature, vote)
     
     if success:
-        res = mine(voter_key)
+        # res = mine(voter_key)
         response = {
             'message' : 'Successfully added trasaction',
             'ballot':{
@@ -215,7 +215,7 @@ def add_ballot():
                 'signature': signature
             },
             'vote_available': blockchain.get_balance(),
-            'res': res
+            # 'res': res
         }
         return jsonify(response), 201
     else:
@@ -228,10 +228,6 @@ def add_ballot():
 # @app.route('/mine', methods = ['POST'])
 def mine(voter_key):
     if blockchain.resolve_conflicts:
-        # response = {
-        #     'message': 'Resolve conflicts first, block not added!'
-        # }
-        # return jsonify(response), 409
         blockchain.resolve()
     block = blockchain.mine_block(voter_key)
     if block != None:

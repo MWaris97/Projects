@@ -10,7 +10,7 @@ from ballot import Ballot
 import requests
 
 # The reward we give to miners
-MINING_REWARD = 1
+PROVIDE_BALLOT = 1
 
 
 class Blockchain:
@@ -128,7 +128,7 @@ class Blockchain:
 
         proof = self.proof_of_work(last_block_hash)
         # use voter_key instead of self.node_key
-        reward_transaction = Ballot('MINING', voter_key, '', MINING_REWARD)
+        initial_ballot = Ballot('FullNodeName', voter_key, '', PROVIDE_BALLOT) #e.g. use ECP for fullNodeName
 
         copied_ballots = self.__open_ballots[:] 
 
@@ -137,7 +137,7 @@ class Blockchain:
             if not Wallet.verify_ballotSign(bt):
                 return None
         
-        copied_ballots.append(reward_transaction)
+        copied_ballots.append(initial_ballot)
         block = Block(len(self.__chain), last_block_hash, copied_ballots, proof)
 
         self.__chain.append(block)
