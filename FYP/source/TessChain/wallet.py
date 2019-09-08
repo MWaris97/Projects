@@ -1,6 +1,7 @@
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Signature import PKCS1_v1_5
 from Cryptodome.Hash import SHA256
+from Cryptodome.Cipher import PKCS1_OAEP
 import Cryptodome.Random as rand
 import binascii
 
@@ -66,9 +67,12 @@ class Wallet:
         h = SHA256.new((str(ballot.voterId)+str(ballot.voter_key)+str(ballot.candidate)+str(ballot.vote)).encode('utf8'))
         return verifier.verify(h, binascii.unhexlify(ballot.signature))
 
-    def encrypt_voterId(self, voterId, voter_prik):
+        
+    @staticmethod
+    def encrypt_voterId(voterId, voter_prik):
         private_key = RSA.import_key(binascii.unhexlify(voter_prik))
-        encrypted_voterId = private_key.encrypt(voterId)
+        encryptor = PKCS1_OAEP.new(private_key)
+        encrypted_voterId = encryptor.encrypt(bytes(voterId, 'utf8'))
         return binascii.hexlify(encrypted_voterId).decode('ascii')
 
     # def decrypt_voterId(self, encrypt_voterId, voter_prik):

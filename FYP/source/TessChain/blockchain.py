@@ -87,13 +87,11 @@ class Blockchain:
 
     #This can be used for calculating the results
 
-    def get_balance(self, voter_key = None):
+    def get_balance(self, voter_key):
         """ Calculate and return the balance for the node"""
 
         if voter_key == None:
-            if self.node_key == None:
                 return None
-            participant = self.node_key
         else:
             # to get the key of the sender, since it is no necessary that the
             # node that is verifying/adding the transaction has carried out 
@@ -116,7 +114,7 @@ class Blockchain:
         # Return the total balance
         return amount_recieved - amount_sent
 
-    def mine_block(self, voter_key, node_key): #add node_key in the param for FullNodeKey
+    def mine_block(self, voter_key, node_key):
 
         if self.node_key == None:
             return False
@@ -125,7 +123,7 @@ class Blockchain:
         last_block_hash =  hash_block(last_block)
 
         proof = self.proof_of_work(last_block_hash)
-        initial_ballot = Ballot('FullNodeID', node_key, voter_key, '', PROVIDE_BALLOT) #e.g. use ECP01/ORG01 for fullNodeID
+        initial_ballot = Ballot(self.node_id, node_key, voter_key, '', PROVIDE_BALLOT)
 
         copied_ballots = self.__open_ballots[:] 
 

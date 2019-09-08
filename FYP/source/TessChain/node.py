@@ -5,6 +5,7 @@ from blockchain import Blockchain
 from wallet import Wallet
 
 from argparse import ArgumentParser
+import random
 
 
 app = Flask(__name__)
@@ -22,11 +23,12 @@ def get_network_ui():
 
 
 @app.route('/node_wallet', methods = ['POST'])
-def create_node_keys(): # add request for FullNodeId
+def create_node_keys():
     if wallet.create_keys():
-        global node_key, node_prik
+        global node_key, node_prik, voter_key
         node_key = wallet.public_key
         node_prik = wallet.private_key
+        voter_key = None
         global blockchain 
         blockchain = Blockchain(node_key, node_id)
         response = {
@@ -45,9 +47,10 @@ def create_node_keys(): # add request for FullNodeId
 @app.route('/node_wallet', methods = ['GET'])
 def load_node_keys():
     if wallet.load_keys():
-        global node_key, node_prik
+        global node_key, node_prik, voter_key
         node_key = wallet.public_key
         node_prik = wallet.private_key
+        voter_key = None
         global blockchain 
         blockchain = Blockchain(node_key, node_id)
         response = {
@@ -81,7 +84,7 @@ def create_keys():
         global voter_key, voter_prik, voterId
         voter_key = wallet.public_key
         voter_prik = wallet.private_key
-        voterId = values['voterId']
+        voterId = Wallet.encrypt_voterId(values['voterId'], voter_prik)
         res = mine(voter_key, node_key)
         response = {
             'public_key': voter_key,
@@ -110,7 +113,7 @@ def get_balance():
     else:
         response = {
             'message': 'Loading balance failed',
-            'wallet_set_up' : wallet.public_key != None #needs fixing
+            'wallet_set_up' : voter_key != None #needs fixing
         }
         return jsonify(response), 500
 
@@ -192,7 +195,7 @@ def broadcast_block():
 
 @app.route('/ballot', methods = ['POST'])
 def add_ballot():
-    if voter_key == None:
+    if voter_key == None or voter_key:
         response = {
             'message': 'No wallet set up'
         }
@@ -229,7 +232,7 @@ def add_ballot():
                 'vote': vote,
                 'signature': signature
             },
-            'vote_available': blockchain.get_balance(),
+            'vote_available': blockchain.get_balance(voter_key),
             # 'res': res
         }
         return jsonify(response), 201
@@ -361,7 +364,7 @@ def get_nodes():
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-p', '--port', type = int, default = 5000)
-    parser.add_argument('-n', '--nodeId', type = str)
+    parser.add_argument('-n', '--nodeId', type = str, default = 'ECP{}'.format(random.randint(100,200)))
     args = parser.parse_args()
     port = args.port
     node_id = args.nodeId
