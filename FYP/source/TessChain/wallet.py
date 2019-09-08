@@ -51,9 +51,9 @@ class Wallet:
             print('Loading wallet failed...')
             return False
 
-    def sign_ballot(self, voter_key, voter_prik, candidate, vote):
+    def sign_ballot(self, voterId, voter_key, voter_prik, candidate, vote):
         signer = PKCS1_v1_5.new(RSA.import_key(binascii.unhexlify(voter_prik)))
-        h = SHA256.new((str(voter_key)+str(candidate)+str(vote)).encode('utf8'))
+        h = SHA256.new((str(voterId)+str(voter_key)+str(candidate)+str(vote)).encode('utf8'))
 
         signature = signer.sign(h)
         return binascii.hexlify(signature).decode('ascii')
@@ -63,7 +63,7 @@ class Wallet:
     def verify_ballotSign(ballot):
         public_key = RSA.import_key(binascii.unhexlify(ballot.voter_key))
         verifier = PKCS1_v1_5.new(public_key)
-        h = SHA256.new((str(ballot.voter_key)+str(ballot.candidate)+str(ballot.vote)).encode('utf8'))
+        h = SHA256.new((str(ballot.voterId)+str(ballot.voter_key)+str(ballot.candidate)+str(ballot.vote)).encode('utf8'))
         return verifier.verify(h, binascii.unhexlify(ballot.signature))
 
     def encrypt_voterId(self, voterId, voter_prik):

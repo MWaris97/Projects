@@ -22,16 +22,16 @@ def get_network_ui():
 
 
 @app.route('/node_wallet', methods = ['POST'])
-def create_node_keys():
+def create_node_keys(): # add request for FullNodeId
     if wallet.create_keys():
         global node_key, node_prik
         node_key = wallet.public_key
         node_prik = wallet.private_key
         global blockchain 
-        blockchain = Blockchain(node_key, port)
+        blockchain = Blockchain(node_key, node_id)
         response = {
             'public_key': node_key,
-            'private_key': node_prik,
+            'node_id': node_id
         }
         return jsonify(response), 201
 
@@ -49,10 +49,10 @@ def load_node_keys():
         node_key = wallet.public_key
         node_prik = wallet.private_key
         global blockchain 
-        blockchain = Blockchain(node_key, port)
+        blockchain = Blockchain(node_key, node_id)
         response = {
             'public_key': node_key,
-            'private_key': node_prik,
+            'node_id': node_id
         }
         return jsonify(response), 201
 
@@ -65,14 +65,27 @@ def load_node_keys():
 
 @app.route('/wallet', methods = ['POST'])
 def create_keys():
+    values = request.get_json()
+    if not values:
+        response = {
+            'message': 'No data found'
+        }
+        return jsonify(response), 400
+    if 'voterId' not in values:
+        response = {
+            'message': 'Some data is missing.'
+        }
+        return jsonify(response), 400
+
     if wallet.create_keys(False):
-        global voter_key, voter_prik
+        global voter_key, voter_prik, voterId
         voter_key = wallet.public_key
         voter_prik = wallet.private_key
-        res = mine(voter_key)
+        voterId = values['voterId']
+        res = mine(voter_key, node_key)
         response = {
             'public_key': voter_key,
-            'private_key': voter_prik,
+            # 'private_key': voter_prik,
             'vote_available': blockchain.get_balance(voter_key),
             'res': res
         }
@@ -110,14 +123,14 @@ def broadcast_ballot():
             'message': 'No data found'
         }
         return jsonify(response), 400
-    required = ['voter_key', 'candidate', 'vote', 'signature']
+    required = ['voterId', 'voter_key', 'candidate', 'vote', 'signature']
     if not all(key in values for key in required):
         response = {
             'message': 'Some data is missing.'
         }
         return jsonify(response), 400
     
-    success = blockchain.add_ballot(values['candidate'], 
+    success = blockchain.add_ballot(values['candidate'], values['voterId'], 
     values['voter_key'], values['signature'], 
     values['vote'], is_recieving = True)
 
@@ -125,6 +138,7 @@ def broadcast_ballot():
         response = {
             'message' : 'Successfully added trasaction',
             'ballot':{
+                'voterId': values['voterId'],
                 'voter_key': values['voter_key'],
                 'candidate': values['candidate'],
                 'vote': values['vote'],
@@ -201,14 +215,15 @@ def add_ballot():
     candidate = values['candidate']
     vote = values['vote']
 
-    signature = wallet.sign_ballot(voter_key, voter_prik, candidate, vote)
-    success = blockchain.add_ballot(candidate, voter_key, signature, vote)
+    signature = wallet.sign_ballot(voterId, voter_key, voter_prik, candidate, vote)
+    success = blockchain.add_ballot(candidate, voterId, voter_key, signature, vote)
     
     if success:
         # res = mine(voter_key)
         response = {
             'message' : 'Successfully added trasaction',
             'ballot':{
+                'voterId': voterId,
                 'voter_key': voter_key,
                 'candidate': candidate,
                 'vote': vote,
@@ -226,10 +241,10 @@ def add_ballot():
 
 
 # @app.route('/mine', methods = ['POST'])
-def mine(voter_key):
+def mine(voter_key, node_key):
     if blockchain.resolve_conflicts:
         blockchain.resolve()
-    block = blockchain.mine_block(voter_key)
+    block = blockchain.mine_block(voter_key, node_key)
     if block != None:
         # redundancy in code, convert to funtion
         dict_block = block.__dict__.copy()
@@ -346,10 +361,12 @@ def get_nodes():
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-p', '--port', type = int, default = 5000)
+    parser.add_argument('-n', '--nodeId', type = str)
     args = parser.parse_args()
     port = args.port
+    node_id = args.nodeId
 
-    wallet = Wallet(port)
-    blockchain = Blockchain(wallet.public_key, port)
+    wallet = Wallet(node_id)
+    blockchain = Blockchain(wallet.public_key, node_id)
 
     app.run(host= '0.0.0.0', port= port)

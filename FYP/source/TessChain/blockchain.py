@@ -50,7 +50,7 @@ class Blockchain:
                 blockchain = json.loads(file_content[0])
                 updated_blockchain = []
                 for block in blockchain:
-                    converted_ballot = [Ballot(bt['voter_key'], bt['candidate'], bt['signature'], bt['vote']) for bt in block['ballot']]
+                    converted_ballot = [Ballot(bt['voterId'], bt['voter_key'], bt['candidate'], bt['signature'], bt['vote']) for bt in block['ballot']]
                     updated_block = Block(block['index'], block['previous_hash'], converted_ballot, block['proof'], block['timestamp'])
                     updated_blockchain.append(updated_block)
                 self.chain = updated_blockchain
@@ -58,7 +58,7 @@ class Blockchain:
                 updated_ballots = []
                 # Converting open_ballots (list of dicts) to list of Ballot objects
                 for bt in open_ballots:
-                    updated_ballot = Ballot(bt['voter_key'], bt['candidate'], bt['signature'],bt['vote'])
+                    updated_ballot = Ballot(bt['voterId'], bt['voter_key'], bt['candidate'], bt['signature'],bt['vote'])
                     updated_ballots.append(updated_ballot)  # make a lis of Ballot object
                 self.__open_ballots = updated_ballots  #copy the converted list to open_ballots 
                 peer_nodes = json.loads(file_content[2])
@@ -106,8 +106,6 @@ class Blockchain:
         # This fetches sent amounts of open transactions (to avoid double spending)
         open_bt_sender = [bt.vote for bt in self.__open_ballots if bt.voter_key == participant]
         voter_key.append(open_bt_sender)
-        # print(voter_key)
-        # print(voter_key)
         # Calculates the total amount of coins sent
         amount_sent = reduce(lambda bt_sum, bt_amt: bt_sum + sum(bt_amt) if len(bt_amt) > 0 else bt_sum,voter_key, 0)
         # This fetches received coin amounts of transactions that were already included in the block
@@ -118,7 +116,7 @@ class Blockchain:
         # Return the total balance
         return amount_recieved - amount_sent
 
-    def mine_block(self, voter_key):
+    def mine_block(self, voter_key, node_key): #add node_key in the param for FullNodeKey
 
         if self.node_key == None:
             return False
@@ -127,8 +125,7 @@ class Blockchain:
         last_block_hash =  hash_block(last_block)
 
         proof = self.proof_of_work(last_block_hash)
-        # use voter_key instead of self.node_key
-        initial_ballot = Ballot('FullNodeName', voter_key, '', PROVIDE_BALLOT) #e.g. use ECP for fullNodeName
+        initial_ballot = Ballot('FullNodeID', node_key, voter_key, '', PROVIDE_BALLOT) #e.g. use ECP01/ORG01 for fullNodeID
 
         copied_ballots = self.__open_ballots[:] 
 
@@ -162,7 +159,7 @@ class Blockchain:
 
         
     def add_block(self, block):
-        ballots = [Ballot(bt['voter_key'], bt['candidate'], bt['signature'], bt['vote']) for bt in block['ballot']]
+        ballots = [Ballot(bt['voterId'], bt['voter_key'], bt['candidate'], bt['signature'], bt['vote']) for bt in block['ballot']]
         proof_is_valid = VerficationHelper.valid_proof(ballots[:-1], block['previous_hash'], block['proof'])
         hashes_match = hash_block(self.chain[-1]) == block['previous_hash']
         if not proof_is_valid or not hashes_match:
@@ -174,7 +171,7 @@ class Blockchain:
         stored_ballots = self.__open_ballots[:]
         for ibt in block['ballot']:
             for openbt in stored_ballots:
-                if openbt.voter_key == ibt['voter_key'] and openbt.candidate == ibt['candidate'] and openbt.vote == ibt['vote'] and openbt.signature == ibt['signature']:
+                if openbt.voterId == ibt['voterId'] and openbt.voter_key == ibt['voter_key'] and openbt.candidate == ibt['candidate'] and openbt.vote == ibt['vote'] and openbt.signature == ibt['signature']:
                     try:
                         self.__open_ballots.remove(openbt)
                     except ValueError:
@@ -183,9 +180,10 @@ class Blockchain:
         return True
 
 
-    def add_ballot(self, candidate, voter_key,signature, vote = 1.0, is_recieving = False):
+    def add_ballot(self, candidate, voterId, voter_key, signature, vote = 1.0, is_recieving = False):
         """ Adds a transaction value in the blockchain concatenated with previous transaction
         Arguments:
+            :voterId: The ID of the voter
             :voter_key: The voter_key of the the voter
             :candidate: The candidate that the voter will choose
             :vote: default = 1.0
@@ -194,7 +192,7 @@ class Blockchain:
         if self.node_key == None:
             return False
 
-        temp_ballot = Ballot(voter_key, candidate, signature, vote)
+        temp_ballot = Ballot(voterId, voter_key, candidate, signature, vote)
 
         #Verify transaction before adding to open ballots        
         if VerficationHelper.verify_ballot(temp_ballot, self.get_balance):
@@ -205,6 +203,7 @@ class Blockchain:
                     url = 'http://{}/broadcast_ballot'.format(node)
                     try:
                         response = requests.post(url, json = {
+                            'voterId': voterId,
                             'voter_key': voter_key,
                             'candidate': candidate,
                             'vote': vote,
@@ -227,7 +226,7 @@ class Blockchain:
                 response = requests.get(url)
                 node_chain = response.json()
                 node_chain = [Block(block['index'], block['previous_hash'], 
-                [Ballot(bt['voter_key'], bt['candidate'], bt['signature'], 
+                [Ballot(bt['voterId'], bt['voter_key'], bt['candidate'], bt['signature'], 
                 bt['vote']) for bt in block['ballot']], 
                 block['proof'], block['timestamp']) for block in node_chain]
                 node_chain_length = len(node_chain)
