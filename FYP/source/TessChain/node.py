@@ -94,7 +94,7 @@ def create_keys():
         res = mine(voter_key, node_key)
         response = {
             'public_key': voter_key,
-            # 'private_key': voter_prik,
+            'private_key': voter_prik,
             'vote_available': blockchain.get_balance(voter_key),
             'res': res
         }
@@ -318,6 +318,31 @@ def count_votes(candidate):
         'Total votes': votes
     }
     return jsonify(response), 200
+
+
+@app.route('/verify_ballot', methods = ['GET'])
+def verify_ballot():
+    values = request.get_json()
+
+    if not values:
+        response = {
+            'message': 'No data found'
+        }
+        return jsonify(response), 400
+    required_fields = ['voterId', 'voter_prik']
+    if not all (field in values for field in required_fields):
+        response = {
+            'message': 'Required data is missing'
+        }
+        return jsonify(response), 400
+    
+    voter_ballot = blockchain.verify_ballot(values['voterId'], values['voter_prik'])
+
+    # response = {
+    #     'message': ',
+    #     'Total votes': votes
+    # }
+    return jsonify(voter_ballot), 200
 
 
 @app.route('/node', methods = ['POST'])

@@ -264,6 +264,12 @@ class Blockchain:
         return total_votes
 
 
+    def verify_ballot(self, voterId, voter_prik):
+        new_voterId = Wallet.encrypt_voterId(voterId, voter_prik)
+        voter_ballot = [[bt for bt in block.ballot if bt.voterId == new_voterId] for block in self.__chain]
+        return [bt for bt in voter_ballot if bt]
+
+
     def add_peer_node(self, node):
         """ Adds a new node to the peer node set.
 
