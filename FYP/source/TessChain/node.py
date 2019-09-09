@@ -79,12 +79,18 @@ def create_keys():
             'message': 'Some data is missing.'
         }
         return jsonify(response), 400
+    if values['voterId'] in blockchain.get_voter_list():
+        response = {
+            'message': 'You have already cast your vote!'
+        }
+        return jsonify(response), 403
 
     if wallet.create_keys(False):
-        global voter_key, voter_prik, voterId
+        global voter_key, voter_prik, voterId, voter_list
         voter_key = wallet.public_key
         voter_prik = wallet.private_key
         voterId = Wallet.encrypt_voterId(values['voterId'], voter_prik)
+        voter_list = values['voterId']
         res = mine(voter_key, node_key)
         response = {
             'public_key': voter_key,
@@ -126,7 +132,7 @@ def broadcast_ballot():
             'message': 'No data found'
         }
         return jsonify(response), 400
-    required = ['voterId', 'voter_key', 'candidate', 'vote', 'signature']
+    required = ['voterId', 'voter_key', 'candidate', 'vote', 'signature','voter_list']
     if not all(key in values for key in required):
         response = {
             'message': 'Some data is missing.'
@@ -135,9 +141,10 @@ def broadcast_ballot():
     
     success = blockchain.add_ballot(values['candidate'], values['voterId'], 
     values['voter_key'], values['signature'], 
-    values['vote'], is_recieving = True)
+    values['vote'], values['voter_list'],is_recieving = True)
 
     if success:
+        blockchain.addto_voter_list(values['voter_list'])
         response = {
             'message' : 'Successfully added trasaction',
             'ballot':{
@@ -195,7 +202,7 @@ def broadcast_block():
 
 @app.route('/ballot', methods = ['POST'])
 def add_ballot():
-    if voter_key == None or voter_key:
+    if voter_key == None:
         response = {
             'message': 'No wallet set up'
         }
@@ -219,9 +226,10 @@ def add_ballot():
     vote = values['vote']
 
     signature = wallet.sign_ballot(voterId, voter_key, voter_prik, candidate, vote)
-    success = blockchain.add_ballot(candidate, voterId, voter_key, signature, vote)
+    success = blockchain.add_ballot(candidate, voterId, voter_key, signature, vote, voter_list)
     
     if success:
+        blockchain.addto_voter_list(voter_list)
         # res = mine(voter_key)
         response = {
             'message' : 'Successfully added trasaction',

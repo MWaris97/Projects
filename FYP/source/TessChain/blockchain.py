@@ -22,10 +22,13 @@ class Blockchain:
         self.chain = [self.genesis_block]
         #Unverified ballots
         self.__open_ballots = []
-        #Id of the hosting node
+        # public key of the validator
         self.node_key = node_key
+        #Id of the hosting node
         self.node_id = node_id
         self.__peer_nodes = set()
+        # list of voters who have already cast vote
+        self.__voter_list = []
         self.resolve_conflicts = False
         #Load data from the file
         self.load_data()
@@ -63,6 +66,8 @@ class Blockchain:
                 self.__open_ballots = updated_ballots  #copy the converted list to open_ballots 
                 peer_nodes = json.loads(file_content[2])
                 self.__peer_nodes = set(peer_nodes)
+                voter_list = json.loads(file_content[3])
+                self.__voter_list = voter_list
         except (IOError, IndexError):
             pass
 
@@ -75,6 +80,7 @@ class Blockchain:
                 saveable_ballot = [bt.__dict__ for bt in self.__open_ballots]
                 f.write('\n' + json.dumps(saveable_ballot))
                 f.write('\n' + json.dumps(list(self.__peer_nodes)))
+                f.write('\n' + json.dumps(self.__voter_list))
         except IOError:
             print("A problem occured while saving the file!")
 
@@ -178,13 +184,13 @@ class Blockchain:
         return True
 
 
-    def add_ballot(self, candidate, voterId, voter_key, signature, vote = 1.0, is_recieving = False):
+    def add_ballot(self, candidate, voterId, voter_key, signature, vote, voter_list, is_recieving = False):
         """ Adds a transaction value in the blockchain concatenated with previous transaction
         Arguments:
             :voterId: The ID of the voter
             :voter_key: The voter_key of the the voter
             :candidate: The candidate that the voter will choose
-            :vote: default = 1.0
+            :vote: default = 1
         """
 
         if self.node_key == None:
@@ -205,7 +211,8 @@ class Blockchain:
                             'voter_key': voter_key,
                             'candidate': candidate,
                             'vote': vote,
-                            'signature': signature})
+                            'signature': signature,
+                            'voter_list': voter_list})
                         if response.status_code == 400 or response.status_code == 500:
                             print('Ballot declined, need resolving!')
                             return False
@@ -278,3 +285,18 @@ class Blockchain:
     def get_peer_nodes(self):
         """ Return a list of all connected peer nodes."""
         return list(self.__peer_nodes)
+
+    
+    def addto_voter_list(self, voterId):
+        """ Adds the voterId to the voter list after the voter cast his/her vote.
+
+        Arguments:
+            :voterId: ID of the voter e.g. 16CSXX
+        """
+        self.__voter_list.append(voterId)
+        self.save_data()
+
+    
+    def get_voter_list(self):
+        """ Return list of voters who have already cast vote"""
+        return self.__voter_list
