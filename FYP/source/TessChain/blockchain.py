@@ -8,6 +8,7 @@ from block import Block
 from ballot import Ballot
 
 import requests
+import random
 
 # The reward we give to miners
 PROVIDE_BALLOT = 1
@@ -67,6 +68,7 @@ class Blockchain:
                 peer_nodes = json.loads(file_content[2])
                 self.__peer_nodes = set(peer_nodes)
                 voter_list = json.loads(file_content[3])
+                random.shuffle(voter_list)
                 self.__voter_list = voter_list
         except (IOError, IndexError):
             pass
@@ -78,6 +80,7 @@ class Blockchain:
                 saveable_chain = [block.__dict__ for block in [Block(block_el.index, block_el.previous_hash, [bt.__dict__ for bt in block_el.ballot], block_el.proof, block_el.timestamp) for block_el in self.__chain]]
                 f.write(json.dumps(saveable_chain))
                 saveable_ballot = [bt.__dict__ for bt in self.__open_ballots]
+                random.shuffle(self.__voter_list)
                 f.write('\n' + json.dumps(saveable_ballot))
                 f.write('\n' + json.dumps(list(self.__peer_nodes)))
                 f.write('\n' + json.dumps(self.__voter_list))
