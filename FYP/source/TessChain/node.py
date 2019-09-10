@@ -320,8 +320,8 @@ def count_votes(candidate):
     return jsonify(response), 200
 
 
-@app.route('/verify_ballot', methods = ['GET'])
-def verify_ballot():
+@app.route('/check_ballot', methods = ['GET'])
+def check_ballot():
     values = request.get_json()
 
     if not values:
@@ -336,13 +336,22 @@ def verify_ballot():
         }
         return jsonify(response), 400
     
-    voter_ballot = blockchain.verify_ballot(values['voterId'], values['voter_prik'])
-
-    # response = {
-    #     'message': ',
-    #     'Total votes': votes
-    # }
-    return jsonify(voter_ballot), 200
+    voter_ballot = blockchain.check_voter_ballot(values['voterId'], values['voter_prik'])
+    if voter_ballot:
+        response = {
+            'Enc_voterId': voter_ballot.voterId,
+            'Dec_voterId': values['voterId'],
+            'voter_key': voter_ballot.voter_key,
+            'candidate': voter_ballot.candidate,
+            'signature': voter_ballot.signature,
+            'vote': voter_ballot.vote
+        }
+        return jsonify(response), 200
+    else:
+        response = {
+            'message': 'Ballot not found! Wrong ID/Key'
+        }
+        return jsonify(response), 404
 
 
 @app.route('/node', methods = ['POST'])
