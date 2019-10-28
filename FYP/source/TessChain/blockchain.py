@@ -267,16 +267,17 @@ class Blockchain:
         return total_votes
 
 
-    def check_voter_ballot(self, voterId, voter_prik):
+    def check_voter_ballot(self, voterId, voter_prik, voter_key):
         """Voter can check if the ballot he has cast is same or it has been manipulated"""
         for block in self.__chain:
             for bt in block.ballot:
-                voter_ballot = Ballot(bt.voterId, bt.voter_key, bt.candidate, bt.signature, bt.vote)
-                try:
-                    if Wallet.decrypt_voterId(voter_ballot.voterId, voter_prik) == voterId:
-                        return voter_ballot
-                except ValueError:
-                    continue
+                if bt.voter_key == voter_key:
+                    voter_ballot = Ballot(bt.voterId, bt.voter_key, bt.candidate, bt.signature, bt.vote)
+                    try:
+                        if Wallet.decrypt_voterId(voter_ballot.voterId, voter_prik) == voterId:
+                            return voter_ballot
+                    except ValueError:
+                        return False
 
 
     def add_peer_node(self, node):

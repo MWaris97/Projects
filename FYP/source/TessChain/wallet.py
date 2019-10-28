@@ -3,7 +3,6 @@ from Cryptodome.Signature import PKCS1_v1_5
 from Cryptodome.Hash import SHA256
 from Cryptodome.Cipher import PKCS1_OAEP
 import Cryptodome.Random as rand
-import Cryptodome as crypto
 import binascii
 
 class Wallet:

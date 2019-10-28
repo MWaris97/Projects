@@ -96,7 +96,7 @@ def create_keys():
             'public_key': voter_key,
             'private_key': voter_prik,
             'vote_available': blockchain.get_balance(voter_key),
-            'res': res
+            # 'res': res
         }
         return jsonify(response), 201
 
@@ -200,7 +200,7 @@ def broadcast_block():
         return jsonify(response), 409
 
 
-@app.route('/ballot', methods = ['POST'])
+@app.route('/ballot', methods = ['POST']) 
 def add_ballot():
     if voter_key == None:
         response = {
@@ -215,7 +215,7 @@ def add_ballot():
             'message': 'No data found'
         }
         return jsonify(response), 400
-    required_fields = ['candidate', 'vote']
+    required_fields = ['candidate', 'vote'] #voter_key, voterId, voter_prik
     if not all (field in values for field in required_fields):
         response = {
             'message': 'Required data is missing'
@@ -274,16 +274,16 @@ def mine(voter_key, node_key):
         return response
 
 
-# @app.route('/resolve_conflicts', methods = ['POST'])
-# def resolve_conflicts():
-#     replaced = blockchain.resolve()
+@app.route('/resolve_conflicts', methods = ['POST'])
+def resolve_conflicts():
+    replaced = blockchain.resolve()
     
-#     if replaced:
-#         response = {'message': 'Chain was replaced'}
-#     else:
-#         response = {'message': 'Local chain kept'}
+    if replaced:
+        response = {'message': 'Chain was replaced'}
+    else:
+        response = {'message': 'Local chain kept'}
 
-#     return jsonify(response), 200
+    return jsonify(response), 200
 
 
 @app.route('/ballots', methods = ['GET'])
@@ -329,14 +329,14 @@ def check_ballot():
             'message': 'No data found'
         }
         return jsonify(response), 400
-    required_fields = ['voterId', 'voter_prik']
+    required_fields = ['voterId', 'voter_prik', 'voter_key']
     if not all (field in values for field in required_fields):
         response = {
             'message': 'Required data is missing'
         }
         return jsonify(response), 400
     
-    voter_ballot = blockchain.check_voter_ballot(values['voterId'], values['voter_prik'])
+    voter_ballot = blockchain.check_voter_ballot(values['voterId'], values['voter_prik'], values['voter_key'])
     if voter_ballot:
         response = {
             'Enc_voterId': voter_ballot.voterId,
